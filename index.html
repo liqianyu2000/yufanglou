@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毓养芳华 · 楼主台</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    font-family:"Songti SC","SimSun",serif;
+    background:#f4ede0;color:#2c1810;
+    font-size:14px;line-height:1.6;
+}
+.layout{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+    width:200px;background:#2c1810;color:#e8dcc8;
+    display:flex;flex-direction:column;flex-shrink:0;
+}
+.sidebar-title{
+    padding:20px 16px;font-size:18px;letter-spacing:4px;
+    color:#d4af37;border-bottom:1px solid #4a3428;text-align:center;
+}
+.room-list{flex:1;overflow-y:auto;padding:8px 0}
+.room-item{
+    padding:12px 16px;cursor:pointer;
+    border-left:3px solid transparent;transition:all .2s;
+    font-size:13px;letter-spacing:1px;
+}
+.room-item:hover{background:#3d281c}
+.room-item.active{
+    background:#3d281c;border-left-color:#d4af37;color:#d4af37;
+}
+.room-status{font-size:11px;color:#8b7355;margin-top:2px}
+.room-item.active .room-status{color:#c9a962}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.header{
+    padding:12px 20px;background:#fff;
+    border-bottom:1px solid #d9c7a8;
+    display:flex;justify-content:space-between;align-items:center;
+}
+.header h2{
+    font-size:16px;letter-spacing:3px;
+    color:#8b2500;font-weight:normal;
+}
+.tabs{display:flex;gap:4px}
+.tab{
+    padding:6px 14px;cursor:pointer;
+    border:1px solid transparent;border-radius:2px;
+    font-size:13px;letter-spacing:1px;
+}
+.tab:hover{background:#f0e6d2}
+.tab.active{background:#8b2500;color:#fff;border-color:#8b2500}
+.content{flex:1;overflow-y:auto;padding:20px}
+.panel{display:none}
+.panel.active{display:block}
+
+.form-group{margin-bottom:16px}
+.form-label{
+    display:block;margin-bottom:6px;color:#6b5344;
+    font-size:13px;letter-spacing:1px;
+}
+.form-input,.form-textarea,.form-select{
+    width:100%;padding:8px 12px;
+    border:1px solid #c9b896;border-radius:2px;
+    background:#fff;font-family:inherit;
+    font-size:14px;color:#2c1810;outline:none;
+    transition:border-color .2s;
+}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:#8b2500}
+.form-textarea{min-height:80px;resize:vertical}
+.btn{
+    padding:8px 20px;border:1px solid #8b2500;
+    background:#8b2500;color:#fff;cursor:pointer;
+    font-family:inherit;font-size:13px;letter-spacing:2px;
+    border-radius:2px;transition:all .2s;
+}
+.btn:hover{background:#6b1c00}
+.btn-outline{background:transparent;color:#8b2500}
+.btn-outline:hover{background:#8b2500;color:#fff}
+.btn-small{padding:4px 10px;font-size:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+.chat-area{
+    flex:1;overflow-y:auto;padding:16px;
+    background:#faf6ed;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:12px;height:calc(100vh - 280px);
+}
+.msg{margin-bottom:16px;max-width:80%}
+.msg-npc{margin-right:auto}
+.msg-player{margin-left:auto;text-align:right}
+.msg-system{text-align:center;margin:12px auto;max-width:90%}
+.msg-avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:#c9b896;display:inline-block;vertical-align:top;
+    overflow:hidden;border:2px solid #8b2500;
+}
+.msg-player .msg-avatar{border-color:#2f4f4f}
+.msg-avatar img{width:100%;height:100%;object-fit:cover}
+.msg-bubble{
+    display:inline-block;vertical-align:top;margin:0 8px;
+    padding:10px 14px;border-radius:4px;position:relative;
+    max-width:calc(100% - 60px);word-break:break-word;text-align:left;
+}
+.msg-npc .msg-bubble{
+    background:#fff;border:1px solid #8b2500;border-left:3px solid #8b2500;
+}
+.msg-player .msg-bubble{
+    background:#f0f5f3;border:1px solid #2f4f4f;border-right:3px solid #2f4f4f;
+}
+.msg-system .msg-bubble{
+    background:transparent;border:1px dashed #c9b896;
+    color:#6b5344;font-size:12px;padding:6px 12px;
+}
+.msg-name{font-size:12px;color:#8b2500;margin-bottom:4px;letter-spacing:1px}
+.msg-player .msg-name{color:#2f4f4f}
+.msg-emotion{font-size:11px;color:#8b7355;margin-left:8px}
+.msg-content{font-size:14px;line-height:1.7}
+
+.options-card{
+    background:#fff;border:1px solid #d4af37;
+    border-radius:4px;padding:12px;margin:12px 0;
+}
+.option-item{
+    padding:8px 12px;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:6px;
+    cursor:pointer;transition:all .2s;font-size:13px;
+}
+.option-item:hover{border-color:#8b2500;background:#faf0e0}
+
+.input-area{
+    background:#fff;border:1px solid #d9c7a8;
+    border-radius:2px;padding:12px;
+}
+.emotion-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.emotion-tag{
+    padding:3px 10px;border:1px solid #c9b896;
+    border-radius:12px;font-size:12px;
+    cursor:pointer;transition:all .2s;
+}
+.emotion-tag:hover{border-color:#8b2500;color:#8b2500}
+.emotion-tag.active{background:#8b2500;color:#fff;border-color:#8b2500}
+.input-row{display:flex;gap:8px;margin-bottom:8px}
+.input-row textarea{
+    flex:1;min-height:60px;resize:none;padding:8px;
+    border:1px solid #c9b896;border-radius:2px;
+    font-family:inherit;font-size:14px;outline:none;
+}
+.tool-bar{
+    display:flex;gap:6px;flex-wrap:wrap;
+    padding-top:8px;border-top:1px solid #eee;
+}
+.tool-btn{
+    padding:4px 10px;font-size:12px;
+    border:1px solid #c9b896;background:#faf6ed;
+    cursor:pointer;border-radius:2px;font-family:inherit;
+}
+.tool-btn:hover{border-color:#8b2500;color:#8b2500}
+
+.modal-mask{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.5);z-index:100;
+    align-items:center;justify-content:center;padding:20px;
+}
+.modal-mask.show{display:flex}
+.modal{
+    background:#f4ede0;border-radius:4px;
+    max-width:500px;width:100%;
+    max-height:90vh;overflow-y:auto;padding:20px;
+}
+.modal-title{
+    font-size:16px;letter-spacing:3px;color:#8b2500;
+    margin-bottom:16px;padding-bottom:8px;
+    border-bottom:1px solid #c9b896;
+}
+
+.stat-row{display:flex;align-items:center;margin-bottom:10px;gap:10px}
+.stat-name{width:80px;font-size:13px;color:#6b5344;flex-shrink:0}
+.stat-bar{flex:1;height:8px;background:#e0d2b8;border-radius:4px;overflow:hidden}
+.stat-fill{height:100%;background:#8b2500;transition:width .3s}
+.stat-val{width:50px;text-align:right;font-size:12px;color:#6b5344}
+.favor-section{
+    margin-bottom:20px;padding-bottom:16px;
+    border-bottom:1px dashed #d9c7a8;
+}
+.favor-section:last-child{border-bottom:none}
+.favor-header{
+    display:flex;justify-content:space-between;
+    align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;
+}
+.favor-name{font-size:14px;color:#8b2500;letter-spacing:1px;flex:1}
+.favor-actions{display:flex;gap:4px}
+.favor-actions .btn-small{padding:2px 8px;font-size:11px}
+.add-npc-btn{
+    width:100%;padding:10px;border:1px dashed #c9b896;
+    background:transparent;color:#8b7355;cursor:pointer;
+    border-radius:2px;font-family:inherit;font-size:13px;
+    letter-spacing:2px;margin-top:8px;
+}
+.add-npc-btn:hover{border-color:#8b2500;color:#8b2500;background:#faf0e0}
+
+.plot-item{
+    padding:12px;background:#fff;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:10px;cursor:pointer;transition:all .2s;
+}
+.plot-item:hover{border-color:#8b2500}
+.plot-title{font-size:14px;color:#2c1810;margin-bottom:4px}
+.plot-meta{font-size:12px;color:#8b7355}
+.plot-status{float:right;font-size:11px;padding:2px 6px;border-radius:2px}
+.status-active{background:#e8f5e9;color:#2e7d32}
+.status-ended{background:#faf0e0;color:#8b7355}
+
+@media (max-width:768px){
+    .sidebar{
+        position:fixed;left:-200px;top:0;
+        height:100vh;z-index:50;transition:left .3s;
+    }
+    .sidebar.open{left:0}
+    .menu-toggle{
+        display:block;position:fixed;top:12px;left:12px;
+        z-index:60;width:36px;height:36px;
+        background:#8b2500;color:#fff;
+        border:none;border-radius:2px;cursor:pointer;font-size:18px;
+    }
+    .header{padding-left:56px}
+    .msg{max-width:90%}
+}
+.menu-toggle{display:none}
+.toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:#2c1810;color:#fff;padding:8px 20px;
+    border-radius:2px;font-size:13px;z-index:200;
+    opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+<div class="layout">
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-title">八房雅舍</div>
+        <div class="room-list" id="roomList"></div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h2 id="currentRoomText">请选择房间</h2>
+            <div class="tabs">
+                <div class="tab active" data-tab="chat">对戏</div>
+                <div class="tab" data-tab="plot">剧情</div>
+                <div class="tab" data-tab="favor">好感</div>
+                <div class="tab" data-tab="stats">数值</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="panel active" id="panel-chat">
+                <div class="chat-area" id="chatArea"></div>
+                <div class="input-area">
+                    <div class="emotion-bar" id="emotionBar">
+                        <span class="emotion-tag active" data-emotion="平和">平和</span>
+                        <span class="emotion-tag" data-emotion="开心">开心</span>
+                        <span class="emotion-tag" data-emotion="难过">难过</span>
+                        <span class="emotion-tag" data-emotion="愤怒">愤怒</span>
+                        <span class="emotion-tag" data-emotion="惊讶">惊讶</span>
+                        <span class="emotion-tag" data-emotion="害羞">害羞</span>
+                        <span class="emotion-tag" data-emotion="无语">无语</span>
+                    </div>
+                    <div class="input-row">
+                        <textarea id="msgInput" placeholder="以NPC身份回复玩家..."></textarea>
+                        <button class="btn" onclick="sendMessage()">发送</button>
+                    </div>
+                    <div class="tool-bar">
+                        <button class="tool-btn" onclick="openModal('createPlot')">创建剧情</button>
+                        <button class="tool-btn" onclick="openModal('addOption')">选项</button>
+                        <button class="tool-btn" onclick="openModal('dropItem')">道具掉落</button>
+                        <button class="tool-btn" onclick="openModal('favorChange')">好感增减</button>
+                        <button class="tool-btn" onclick="triggerEvent()">突发事件</button>
+                        <button class="tool-btn" onclick="endPlot()">结束剧情</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-plot">
+                <button class="btn btn-outline" onclick="openModal('createPlot')" style="margin-bottom:16px">+ 新建剧情</button>
+                <div id="plotList"></div>
+            </div>
+
+            <div class="panel" id="panel-favor">
+                <div id="favorList"></div>
+                <button class="add-npc-btn" onclick="openModal('addNpc')">+ 添加新NPC</button>
+            </div>
+
+            <div class="panel" id="panel-stats">
+                <h3 style="color:#8b2500;margin-bottom:12px;font-weight:normal;letter-spacing:2px">十二艺业</h3>
+                <div id="statsList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建剧情弹窗 -->
+<div class="modal-mask" id="modal-createPlot">
+    <div class="modal">
+        <div class="modal-title">开启新剧情</div>
+        <div class="form-group">
+            <label class="form-label">出场NPC（可多选，按住Ctrl多选）</label>
+            <select class="form-select" id="plotNpc" multiple size="6"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">日期</label>
+            <input type="text" class="form-input" id="plotDate" placeholder="如：永安三年 七月初八">
+        </div>
+        <div class="form-group">
+            <label class="form-label">时辰</label>
+            <select class="form-select" id="plotTime">
+                <option>卯时</option><option>辰时</option><option>巳时</option>
+                <option>午时</option><option>未时</option><option>申时</option>
+                <option>酉时</option><option>戌时</option><option>亥时</option>
+                <option>子时</option><option>丑时</option><option>寅时</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">地点</label>
+            <input type="text" class="form-input" id="plotPlace" placeholder="如：毓芳楼·后花园">
+        </div>
+        <div class="form-group">
+            <label class="form-label">天气</label>
+            <input type="text" class="form-input" id="plotWeather" placeholder="如：晴，微风">
+        </div>
+        <div class="form-group">
+            <label class="form-label">NPC头像链接（可选）</label>
+            <input type="text" class="form-input" id="plotNpcImg" placeholder="图片URL">
+        </div>
+        <div class="form-group">
+            <label class="form-label">剧情梗概</label>
+            <textarea class="form-textarea" id="plotSummary"></textarea>
+        </div>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('createPlot')">取消</button>
+            <button class="btn" onclick="createPlot()">开启剧情</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加选项弹窗 -->
+<div class="modal-mask" id="modal-addOption">
+    <div class="modal">
+        <div class="modal-title">设置选择分支</div>
+        <div id="optionInputs">
+            <div class="option-input-row" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed #d9c7a8">
+                <div class="form-group">
+                    <label class="form-label">选项文字</label>
+                    <input type="text" class="form-input opt-text" placeholder="如：上前搭话">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">触发效果描述</label>
+                    <input type="text" class="form-input opt-effect" placeholder="如：夜鸩淡淡看了你一眼">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">好感变化（数字，正负均可）</label>
+                    <input type="number" class="form-input opt-favor" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数值门槛（如：体质>80，不填则无门槛）</label>
+                    <input type="text" class="form-input opt-req" placeholder="如：容貌>300">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">掉落道具名（不填则不掉）</label>
+                    <input type="text" class="form-input opt-item" placeholder="如：木雕夜来香">
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-outline btn-small" onclick="addOptionRow()" style="margin-bottom:16px">+ 再加一个选项</button>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('addOption')">取消</button>
+            <button class="btn" onclick="sendOptions()">发送选项</button>
+        </div>
+    </div>
+</div>
+
+<!-- 道具掉落弹窗 -->
+<div class="modal-mask" id="modal-dropItem">
+    <div class="modal">
+        <div class="modal-title">道具掉落</div>
+        <div class="form-group">
+            <label class="form-label">道具名称</label>
+            <input type="text" class="form-input" id="itemName">
+        </div>
+        <div class="form-group">
+            <label class="form-label">道具描述</label>
+            <textarea class="form-textarea" id="itemDesc"></textarea>
+        </div>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('dropItem')">取消</button>
+            <button class="btn" onclick="dropItem()">确认掉落</button>
+        </div>
+    </div>
+</div>
+
+<!-- 好感增减弹窗 -->
+<div class="modal-mask" id="modal-favorChange">
+    <div class="modal">
+        <div class="modal-title">好感度调整</div>
+        <div class="form-group">
+            <label class="form-label">选择NPC</label>
+            <select class="form-select" id="favorNpc"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">好感变化值</label>
+            <input type="number" class="form-input" id="favorChange" value="5">
+        </div>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('favorChange')">取消</button>
+            <button class="btn" onclick="changeFavor()">确认调整</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加NPC弹窗 -->
+<div class="modal-mask" id="modal-addNpc">
+    <div class="modal">
+        <div class="modal-title">添加新NPC</div>
+        <div class="form-group">
+            <label class="form-label">NPC名称</label>
+            <input type="text" class="form-input" id="newNpcName" placeholder="请输入NPC名字">
+        </div>
+        <div class="form-group">
+            <label class="form-label">初始好感值</label>
+            <input type="number" class="form-input" id="newNpcFavor" value="0">
+        </div>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('addNpc')">取消</button>
+            <button class="btn" onclick="addNewNpc()">确认添加</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重命名NPC弹窗 -->
+<div class="modal-mask" id="modal-renameNpc">
+    <div class="modal">
+        <div class="modal-title">重命名NPC</div>
+        <div class="form-group">
+            <label class="form-label">新名称</label>
+            <input type="text" class="form-input" id="renameNpcInput">
+        </div>
+        <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('renameNpc')">取消</button>
+            <button class="btn" onclick="confirmRenameNpc()">确认修改</button>
+        </div>
+    </div>
+</div>
+
+<!-- 剧情详情弹窗 -->
+<div class="modal-mask" id="modal-plotDetail">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-title" id="plotDetailTitle">剧情记录</div>
+        <div id="plotDetailContent" style="max-height:60vh;overflow-y:auto"></div>
+        <div class="btn-group" style="justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-outline" onclick="closeModal('plotDetail')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 【重要】填写你的 Supabase 配置
+// ============================================================
+const SUPABASE_URL="https://ysdmcswokachepuizple.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzZG1jc3dva2FjaGVwdWl6cGxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMjY3MzUsImV4cCI6MjEwMjgwMjczNX0.LVudX6SBGd3NwwS5hK6AahYVjTrPXDIZaT8s0InQegk";
+// ============================================================
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const DEFAULT_NPCS = ['夜鸩','白照儿','林晚樵','许愿','秦霜','阿娜枝'];
+const EMOTIONS = ['平和','开心','难过','愤怒','惊讶','害羞','无语'];
+const STATS_LIST = ['乐舞','书画','花艺','茶道','医药','算数','制造','烹饪','策论','骑射','堪舆','习语','体质','容貌','声望','太后党重视度','士族党重视度','帝党重视度','清流党重视度'];
+const ROOM_COUNT = 8;
+
+let currentRoom = null;
+let currentEmotion = '平和';
+let currentPlotNpc = '夜鸩';
+let currentNpcList = [...DEFAULT_NPCS];
+let renameTargetNpc = '';
+let roomData = {};
+let subscription = null;
+
+// 初始化房间列表
+function initRoomList(){
+    const list = document.getElementById('roomList');
+    list.innerHTML = '';
+    for(let i=0;i<ROOM_COUNT;i++){
+        const roomId = String(i+1).padStart(3,'0');
+        const div = document.createElement('div');
+        div.className = 'room-item';
+        div.dataset.room = roomId;
+        div.innerHTML = `
+            房间 ${roomId}
+            <div class="room-status" id="status-${roomId}">未入住</div>
+        `;
+        div.onclick = ()=>selectRoom(roomId);
+        list.appendChild(div);
+    }
+    loadAllRoomsStatus();
+}
+
+async function loadAllRoomsStatus(){
+    const {data} = await supabase.from('rooms').select('room_id, data');
+    if(data){
+        data.forEach(row=>{
+            const info = row.data?.playerInfo;
+            const statusEl = document.getElementById(`status-${row.room_id}`);
+            if(statusEl){
+                statusEl.textContent = info?.name ? `玩家：${info.name}` : '未入住';
+            }
+        });
+    }
+}
+
+async function initRoomIfNotExists(roomId){
+    const {data} = await supabase.from('rooms').select('*').eq('room_id', roomId).maybeSingle();
+    if(!data){
+        const initData = {
+            playerInfo: null,
+            npcList: {},
+            npcFavor: {},
+            stats: {},
+            messages: {},
+            inventory: {},
+            plotArchive: {},
+            currentPlot: null
+        };
+        DEFAULT_NPCS.forEach(n=>{
+            initData.npcList[n] = 0;
+            initData.npcFavor[n] = 0;
+        });
+        STATS_LIST.forEach(s=>initData.stats[s] = 0);
+        initData.stats.体质 = 50;
+        initData.stats.容貌 = 100;
+        
+        await supabase.from('rooms').insert({room_id: roomId, data: initData});
+        return initData;
+    }
+    // 补全缺失字段
+    const d = data.data || {};
+    if(!d.npcList || Object.keys(d.npcList).length===0){
+        d.npcList = {};
+        DEFAULT_NPCS.forEach(n=>d.npcList[n]=0);
+    }
+    if(!d.npcFavor) d.npcFavor = {};
+    if(!d.stats) d.stats = {};
+    if(!d.messages) d.messages = {};
+    if(!d.inventory) d.inventory = {};
+    if(!d.plotArchive) d.plotArchive = {};
+    return d;
+}
+
+async function selectRoom(roomId){
+    if(subscription){
+        supabase.removeChannel(subscription);
+        subscription = null;
+    }
+    
+    currentRoom = roomId;
+    document.getElementById('currentRoomText').textContent = `房间 ${roomId} · 楼主台`;
+    
+    document.querySelectorAll('.room-item').forEach(el=>{
+        el.classList.toggle('active', el.dataset.room===roomId);
+    });
+    
+    roomData = await initRoomIfNotExists(roomId);
+    currentNpcList = Object.keys(roomData.npcList);
+    if(currentNpcList.length===0) currentNpcList = [...DEFAULT_NPCS];
+    
+    updateNpcSelects();
+    renderAll();
+    
+    // 订阅实时更新
+    subscription = supabase.channel(`host-${roomId}`)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rooms',
+            filter: `room_id=eq.${roomId}`
+        }, payload=>{
+            roomData = payload.new.data || {};
+            currentNpcList = Object.keys(roomData.npcList || {});
+            if(currentNpcList.length===0) currentNpcList = [...DEFAULT_NPCS];
+            updateNpcSelects();
+            renderAll();
+            
+            const statusEl = document.getElementById(`status-${roomId}`);
+            if(statusEl){
+                statusEl.textContent = roomData.playerInfo?.name 
+                    ? `玩家：${roomData.playerInfo.name}` 
+                    : '未入住';
+            }
+        })
+        .subscribe();
+    
+    showToast(`已连接房间 ${roomId}`);
+}
+
+function renderAll(){
+    renderChat(roomData.messages || {});
+    renderPlotList(roomData.plotArchive || {});
+    renderFavor(roomData.npcFavor || {});
+    renderStats(roomData.stats || {});
+    
+    if(roomData.currentPlot?.npcs){
+        const npcs = roomData.currentPlot.npcs.split(',');
+        if(npcs.length===1) currentPlotNpc = npcs[0].trim();
+    }
+}
+
+function updateNpcSelects(){
+    const plotSelect = document.getElementById('plotNpc');
+    plotSelect.innerHTML = '';
+    currentNpcList.forEach(name=>{
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        plotSelect.appendChild(opt);
+    });
+    
+    const favorSelect = document.getElementById('favorNpc');
+    favorSelect.innerHTML = '';
+    currentNpcList.forEach(name=>{
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        favorSelect.appendChild(opt);
+    });
+}
+
+async function saveRoomData(){
+    if(!currentRoom) return;
+    await supabase.from('rooms').update({
+        data: roomData,
+        updated_at: new Date().toISOString()
+    }).eq('room_id', currentRoom);
+}
+
+// 渲染聊天
+function renderChat(messages){
+    const area = document.getElementById('chatArea');
+    area.innerHTML = '';
+    const msgList = Object.values(messages).sort((a,b)=>a.timestamp - b.timestamp);
+    
+    msgList.forEach(msg=>{
+        const div = document.createElement('div');
+        div.className = `msg msg-${msg.type}`;
+        
+        if(msg.type==='system'){
+            div.innerHTML = `<div class="msg-bubble">${msg.content}</div>`;
+        }else{
+            const avatar = msg.avatar || '';
+            div.innerHTML = `
+                <div class="msg-avatar">${avatar?`<img src="${avatar}">`:''}</div>
+                <div class="msg-bubble">
+                    <div class="msg-name">
+                        ${msg.sender}
+                        <span class="msg-emotion">${msg.emotion || ''}</span>
+                    </div>
+                    <div class="msg-content">${msg.content}</div>
+                </div>
+            `;
+        }
+        area.appendChild(div);
+    });
+    
+    // 渲染选项
+    const lastMsg = msgList[msgList.length-1];
+    if(lastMsg && lastMsg.type==='options' && lastMsg.options){
+        const card = document.createElement('div');
+        card.className = 'options-card';
+        card.innerHTML = '<div style="color:#8b2500;margin-bottom:8px;font-size:13px">【玩家待选择】</div>';
+        lastMsg.options.forEach(opt=>{
+            const item = document.createElement('div');
+            item.className = 'option-item';
+            item.innerHTML = `
+                ${opt.text}
+                ${opt.req?`<div style="font-size:11px;color:#8b7355;margin-top:2px">要求：${opt.req}</div>`:''}
+            `;
+            card.appendChild(item);
+        });
+        area.appendChild(card);
+    }
+    
+    area.scrollTop = area.scrollHeight;
+}
+
+function sendMessage(){
+    if(!currentRoom){showToast('请先选择房间');return}
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    roomData.messages[msgId] = {
+        type:'npc',
+        sender:currentPlotNpc,
+        content:text,
+        emotion:currentEmotion,
+        timestamp:Date.now()
+    };
+    
+    saveRoomData();
+    input.value = '';
+}
+
+function createPlot(){
+    const npcsSelect = document.getElementById('plotNpc');
+    const npcs = Array.from(npcsSelect.selectedOptions).map(o=>o.value).join(',');
+    if(!npcs){showToast('请选择至少一个NPC');return}
+    
+    const plot = {
+        npcs,
+        date:document.getElementById('plotDate').value,
+        time:document.getElementById('plotTime').value,
+        place:document.getElementById('plotPlace').value,
+        weather:document.getElementById('plotWeather').value,
+        npcImg:document.getElementById('plotNpcImg').value,
+        summary:document.getElementById('plotSummary').value,
+        startTime:Date.now(),
+        status:'active'
+    };
+    
+    roomData.currentPlot = plot;
+    
+    const sysId = 'msg_' + Date.now();
+    roomData.messages[sysId] = {
+        type:'system',
+        content:`【剧情开启】${plot.date} ${plot.time} · ${plot.place} · ${plot.weather}<br>${plot.summary}`,
+        timestamp:Date.now()
+    };
+    
+    if(npcs.split(',').length===1) currentPlotNpc = npcs.trim();
+    
+    saveRoomData();
+    closeModal('createPlot');
+    showToast('剧情已开启');
+}
+
+function endPlot(){
+    if(!currentRoom || !roomData.currentPlot){
+        showToast('当前没有进行中的剧情');
+        return;
+    }
+    
+    const plot = {...roomData.currentPlot};
+    plot.endTime = Date.now();
+    plot.status = 'ended';
+    plot.messages = {...roomData.messages};
+    
+    const plotId = 'plot_' + Date.now();
+    roomData.plotArchive[plotId] = plot;
+    
+    roomData.currentPlot = null;
+    roomData.messages = {};
+    roomData.currentOptions = null;
+    
+    saveRoomData();
+    showToast('剧情已结束并存档');
+}
+
+function sendOptions(){
+    if(!currentRoom) return;
+    const rows = document.querySelectorAll('.option-input-row');
+    const options = [];
+    
+    rows.forEach(row=>{
+        const text = row.querySelector('.opt-text').value.trim();
+        if(!text) return;
+        options.push({
+            text,
+            effect:row.querySelector('.opt-effect').value,
+            favor:parseInt(row.querySelector('.opt-favor').value)||0,
+            req:row.querySelector('.opt-req').value.trim(),
+            item:row.querySelector('.opt-item').value.trim()
+        });
+    });
+    
+    if(options.length<2){showToast('至少设置两个选项');return}
+    
+    const msgId = 'msg_' + Date.now();
+    roomData.messages[msgId] = {
+        type:'options',
+        sender:'system',
+        content:'请做出你的选择',
+        options,
+        timestamp:Date.now()
+    };
+    roomData.currentOptions = options;
+    
+    saveRoomData();
+    closeModal('addOption');
+    showToast('选项已发送');
+}
+
+function addOptionRow(){
+    const container = document.getElementById('optionInputs');
+    const clone = container.firstElementChild.cloneNode(true);
+    clone.querySelectorAll('input').forEach(i=>i.value='');
+    clone.querySelector('.opt-favor').value = 0;
+    container.appendChild(clone);
+}
+
+function dropItem(){
+    if(!currentRoom) return;
+    const name = document.getElementById('itemName').value.trim();
+    const desc = document.getElementById('itemDesc').value.trim();
+    if(!name){showToast('请输入道具名');return}
+    
+    const itemId = 'item_' + Date.now();
+    roomData.inventory[itemId] = {name, desc, time:Date.now()};
+    
+    const sysId = 'msg_' + Date.now() + '_sys';
+    roomData.messages[sysId] = {
+        type:'system',
+        content:`【获得道具】${name}`,
+        timestamp:Date.now()
+    };
+    
+    saveRoomData();
+    closeModal('dropItem');
+    showToast('道具已发放');
+}
+
+function changeFavor(){
+    if(!currentRoom) return;
+    const npc = document.getElementById('favorNpc').value;
+    const change = parseInt(document.getElementById('favorChange').value)||0;
+    
+    roomData.npcFavor[npc] = (roomData.npcFavor[npc] || 0) + change;
+    roomData.npcList[npc] = (roomData.npcList[npc] || 0) + change;
+    
+    const sysId = 'msg_' + Date.now();
+    roomData.messages[sysId] = {
+        type:'system',
+        content:`【好感变化】${npc} 好感 ${change>0?'+':''}${change}`,
+        timestamp:Date.now()
+    };
+    
+    saveRoomData();
+    closeModal('favorChange');
+}
+
+// NPC管理
+function addNewNpc(){
+    const name = document.getElementById('newNpcName').value.trim();
+    const favor = parseInt(document.getElementById('newNpcFavor').value)||0;
+    if(!name){showToast('请输入NPC名称');return}
+    if(currentNpcList.includes(name)){showToast('该NPC已存在');return}
+    
+    roomData.npcList[name] = favor;
+    roomData.npcFavor[name] = favor;
+    
+    document.getElementById('newNpcName').value = '';
+    document.getElementById('newNpcFavor').value = 0;
+    
+    saveRoomData();
+    closeModal('addNpc');
+    showToast('NPC已添加');
+}
+
+function openRenameNpc(oldName){
+    renameTargetNpc = oldName;
+    document.getElementById('renameNpcInput').value = oldName;
+    openModal('renameNpc');
+}
+
+function confirmRenameNpc(){
+    const newName = document.getElementById('renameNpcInput').value.trim();
+    if(!newName || !renameTargetNpc) return;
+    if(newName === renameTargetNpc){closeModal('renameNpc');return}
+    
+    const favor = roomData.npcFavor[renameTargetNpc] || 0;
+    roomData.npcFavor[newName] = favor;
+    roomData.npcList[newName] = favor;
+    delete roomData.npcFavor[renameTargetNpc];
+    delete roomData.npcList[renameTargetNpc];
+    
+    if(currentPlotNpc === renameTargetNpc) currentPlotNpc = newName;
+    
+    saveRoomData();
+    closeModal('renameNpc');
+    showToast('已重命名');
+}
+
+function deleteNpc(name){
+    if(!confirm(`确定要删除 NPC「${name}」吗？好感数据将一并清除。`)) return;
+    delete roomData.npcFavor[name];
+    delete roomData.npcList[name];
+    saveRoomData();
+    showToast('已删除');
+}
+
+// 渲染好感
+function renderFavor(favor){
+    const list = document.getElementById('favorList');
+    list.innerHTML = '';
+    const names = Object.keys(favor).length ? Object.keys(favor) : currentNpcList;
+    
+    names.forEach(name=>{
+        const val = favor[name] || 0;
+        const div = document.createElement('div');
+        div.className = 'favor-section';
+        div.innerHTML = `
+            <div class="favor-header">
+                <span class="favor-name">${name}</span>
+                <div class="favor-actions">
+                    <button class="btn btn-outline btn-small" onclick="openRenameNpc('${name}')">改名</button>
+                    <button class="btn btn-outline btn-small" onclick="deleteNpc('${name}')">删除</button>
+                </div>
+            </div>
+            <div class="favor-header">
+                <div class="btn-group">
+                    <button class="btn btn-outline btn-small" onclick="adjustFavor('${name}',-5)">-5</button>
+                    <button class="btn btn-outline btn-small" onclick="adjustFavor('${name}',-1)">-1</button>
+                    <button class="btn btn-outline btn-small" onclick="adjustFavor('${name}',1)">+1</button>
+                    <button class="btn btn-outline btn-small" onclick="adjustFavor('${name}',5)">+5</button>
+                </div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-bar"><div class="stat-fill" style="width:${Math.min(val/100*100,100)}%"></div></div>
+                <span class="stat-val">${val}</span>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function adjustFavor(npc, delta){
+    if(!currentRoom) return;
+    roomData.npcFavor[npc] = (roomData.npcFavor[npc]||0) + delta;
+    roomData.npcList[npc] = (roomData.npcList[npc]||0) + delta;
+    saveRoomData();
+}
+
+// 突发事件
+const RANDOM_EVENTS = [
+    '窗外忽然下起骤雨，噼啪打在瓦檐上。',
+    '一只三花狸奴悄无声息闯了进来，跃上窗台。',
+    '殿中灯烛忽然被风吹灭，四下陷入昏暗。',
+    '远处传来钟鼓楼的钟声，悠悠扬扬。',
+    '一只信鸽扑棱着落在窗沿，脚上绑着字条。',
+    '走廊传来嬷嬷的脚步声，越来越近。',
+    '空气中忽然飘来一阵奇异的花香。',
+    '天边滚过一阵闷雷，天色暗了几分。',
+    '一只蝴蝶翩跹飞进室内，停在你衣袖上。',
+    '楼下传来琴声，断断续续，不知何人所弹。',
+    '桌上茶杯微微一颤，似有轻微地动。',
+    '一阵穿堂风吹过，书页哗哗翻动。',
+    '墙外传来叫卖声，远远近近。',
+    '夜色渐深，一轮满月升上檐角。',
+    '不知何处飘来桂花香，清甜醉人。'
+];
+
+function triggerEvent(){
+    if(!currentRoom) return;
+    const event = RANDOM_EVENTS[Math.floor(Math.random()*RANDOM_EVENTS.length)];
+    const msgId = 'msg_' + Date.now();
+    roomData.messages[msgId] = {
+        type:'system',
+        content:`【突发】${event}`,
+        timestamp:Date.now()
+    };
+    saveRoomData();
+    showToast('事件已触发');
+}
+
+// 渲染剧情列表
+function renderPlotList(archive){
+    const list = document.getElementById('plotList');
+    list.innerHTML = '';
+    const plots = Object.entries(archive).sort((a,b)=>b[1].startTime - a[1].startTime);
+    
+    if(plots.length===0){
+        list.innerHTML = '<div style="color:#8b7355;text-align:center;padding:40px">暂无存档剧情</div>';
+        return;
+    }
+    
+    plots.forEach(([id,plot])=>{
+        const div = document.createElement('div');
+        div.className = 'plot-item';
+        div.innerHTML = `
+            <span class="plot-status ${plot.status==='active'?'status-active':'status-ended'}">${plot.status==='active'?'进行中':'已结束'}</span>
+            <div class="plot-title">${plot.npcs} · ${plot.place}</div>
+            <div class="plot-meta">${plot.date} ${plot.time} · ${plot.weather}</div>
+        `;
+        div.onclick = ()=>showPlotDetail(id, plot);
+        list.appendChild(div);
+    });
+}
+
+function showPlotDetail(id, plot){
+    document.getElementById('plotDetailTitle').textContent = `${plot.npcs} · ${plot.place}`;
+    const content = document.getElementById('plotDetailContent');
+    content.innerHTML = '';
+    
+    const msgs = Object.values(plot.messages||{}).sort((a,b)=>a.timestamp - b.timestamp);
+    msgs.forEach(msg=>{
+        const div = document.createElement('div');
+        div.style.marginBottom = '10px';
+        div.style.padding = '8px';
+        div.style.borderBottom = '1px dashed #e0d2b8';
+        if(msg.type==='system'){
+            div.style.color = '#6b5344';
+            div.style.fontSize = '12px';
+            div.innerHTML = msg.content;
+        }else{
+            div.innerHTML = `<b style="color:#8b2500">${msg.sender}</b> ${msg.emotion?`(${msg.emotion})`:''}：${msg.content}`;
+        }
+        content.appendChild(div);
+    });
+    
+    openModal('plotDetail');
+}
+
+// 渲染数值
+function renderStats(stats){
+    const list = document.getElementById('statsList');
+    list.innerHTML = '';
+    STATS_LIST.forEach(name=>{
+        const val = stats[name] || 0;
+        const max = name.includes('重视度') ? 200 : 1500;
+        const div = document.createElement('div');
+        div.className = 'stat-row';
+        div.innerHTML = `
+            <span class="stat-name">${name}</span>
+            <div class="stat-bar"><div class="stat-fill" style="width:${Math.min(val/max*100,100)}%"></div></div>
+            <span class="stat-val">${val}</span>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// 情绪选择
+document.getElementById('emotionBar').addEventListener('click',e=>{
+    if(e.target.classList.contains('emotion-tag')){
+        document.querySelectorAll('.emotion-tag').forEach(t=>t.classList.remove('active'));
+        e.target.classList.add('active');
+        currentEmotion = e.target.dataset.emotion;
+    }
+});
+
+// Tab切换
+document.querySelectorAll('.tab').forEach(tab=>{
+    tab.onclick = ()=>{
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+        document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+    };
+});
+
+// 弹窗
+function openModal(id){
+    document.getElementById('modal-'+id).classList.add('show');
+}
+function closeModal(id){
+    document.getElementById('modal-'+id).classList.remove('show');
+}
+
+// 侧边栏
+function toggleSidebar(){
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Toast
+function showToast(text){
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// 回车发送
+document.getElementById('msgInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// 初始化
+initRoomList();
+</script>
+</body>
+</html>

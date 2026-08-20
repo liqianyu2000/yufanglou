@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毓养芳华 · 玩家台</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    font-family:"Songti SC","SimSun",serif;
+    background:#f4ede0;color:#2c1810;
+    font-size:14px;line-height:1.6;
+}
+
+.login-page{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    background-image:
+        radial-gradient(circle at 30% 20%, rgba(139,37,0,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(47,79,79,0.06) 0%, transparent 50%);
+}
+.login-box{
+    width:100%;max-width:380px;
+    background:#fff;border:1px solid #d9c7a8;border-radius:2px;
+    padding:32px 28px;box-shadow:0 8px 24px rgba(44,24,16,0.08);
+}
+.login-title{
+    text-align:center;font-size:24px;letter-spacing:6px;
+    color:#8b2500;margin-bottom:4px;font-weight:normal;
+}
+.login-sub{
+    text-align:center;color:#8b7355;font-size:12px;
+    letter-spacing:3px;margin-bottom:30px;
+    padding-bottom:12px;border-bottom:1px solid #eee;
+}
+.form-group{margin-bottom:16px}
+.form-label{
+    display:block;margin-bottom:6px;color:#6b5344;
+    font-size:13px;letter-spacing:1px;
+}
+.form-input,.form-select{
+    width:100%;padding:10px 12px;
+    border:1px solid #c9b896;border-radius:2px;
+    background:#faf6ed;font-family:inherit;
+    font-size:14px;color:#2c1810;outline:none;
+    transition:border-color .2s;
+}
+.form-input:focus,.form-select:focus{border-color:#8b2500}
+.avatar-upload{
+    width:80px;height:80px;border:1px dashed #c9b896;
+    border-radius:50%;margin:0 auto 16px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;overflow:hidden;background:#faf6ed;
+    color:#8b7355;font-size:12px;
+}
+.avatar-upload img{width:100%;height:100%;object-fit:cover}
+.btn-submit{
+    width:100%;padding:12px;background:#8b2500;
+    color:#fff;border:none;border-radius:2px;
+    font-family:inherit;font-size:16px;letter-spacing:6px;
+    cursor:pointer;transition:background .2s;margin-top:10px;
+}
+.btn-submit:hover{background:#6b1c00}
+
+.main-page{display:none;height:100vh;flex-direction:column}
+.main-page.show{display:flex}
+
+.header{
+    padding:12px 16px;background:#fff;
+    border-bottom:1px solid #d9c7a8;
+    display:flex;justify-content:space-between;align-items:center;
+}
+.header h2{
+    font-size:16px;letter-spacing:3px;
+    color:#8b2500;font-weight:normal;
+}
+.nav-bar{
+    display:flex;background:#fff;
+    border-top:1px solid #d9c7a8;flex-shrink:0;
+}
+.nav-item{
+    flex:1;text-align:center;padding:10px 4px;
+    font-size:12px;letter-spacing:1px;cursor:pointer;
+    color:#6b5344;border-top:2px solid transparent;
+    transition:all .2s;
+}
+.nav-item.active{
+    color:#8b2500;border-top-color:#8b2500;
+    background:#faf0e0;
+}
+.content{flex:1;overflow-y:auto;padding:16px}
+.panel{display:none}
+.panel.active{display:block}
+
+.chat-area{
+    height:calc(100vh - 190px);
+    overflow-y:auto;padding:12px;
+    background:#faf6ed;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:10px;
+}
+.msg{margin-bottom:14px;max-width:82%}
+.msg-npc{margin-right:auto}
+.msg-player{margin-left:auto;text-align:right}
+.msg-system{text-align:center;margin:10px auto;max-width:90%}
+.msg-avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:#c9b896;display:inline-block;vertical-align:top;
+    overflow:hidden;border:2px solid #8b2500;
+}
+.msg-player .msg-avatar{border-color:#2f4f4f}
+.msg-avatar img{width:100%;height:100%;object-fit:cover}
+.msg-bubble{
+    display:inline-block;vertical-align:top;margin:0 6px;
+    padding:9px 12px;border-radius:4px;position:relative;
+    max-width:calc(100% - 52px);word-break:break-word;text-align:left;
+}
+.msg-npc .msg-bubble{
+    background:#fff;border:1px solid #8b2500;border-left:3px solid #8b2500;
+}
+.msg-player .msg-bubble{
+    background:#f0f5f3;border:1px solid #2f4f4f;border-right:3px solid #2f4f4f;
+}
+.msg-system .msg-bubble{
+    background:transparent;border:1px dashed #c9b896;
+    color:#6b5344;font-size:12px;padding:5px 10px;
+}
+.msg-name{font-size:11px;color:#8b2500;margin-bottom:3px;letter-spacing:1px}
+.msg-player .msg-name{color:#2f4f4f}
+.msg-emotion{font-size:11px;color:#8b7355;margin-left:6px}
+.msg-content{font-size:14px;line-height:1.7}
+
+.msg-actions{
+    display:flex;gap:8px;justify-content:flex-end;
+    margin-top:4px;font-size:11px;color:#8b7355;
+}
+.msg-actions span{
+    cursor:pointer;padding:2px 6px;
+    border:1px solid #e0d2b8;border-radius:2px;
+}
+.msg-actions span:hover{border-color:#8b2500;color:#8b2500}
+
+.options-card{
+    background:#fff;border:1px solid #d4af37;
+    border-radius:4px;padding:10px;margin:10px 0;
+}
+.options-title{
+    font-size:13px;color:#8b2500;
+    margin-bottom:8px;letter-spacing:1px;
+}
+.option-item{
+    padding:8px 10px;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:5px;
+    cursor:pointer;transition:all .2s;font-size:13px;
+}
+.option-item:hover{border-color:#8b2500;background:#faf0e0}
+.option-item.disabled{opacity:0.5;cursor:not-allowed}
+.option-req{font-size:11px;color:#c62828;margin-top:2px}
+
+.input-area{
+    background:#fff;border:1px solid #d9c7a8;
+    border-radius:2px;padding:10px;
+}
+.emotion-bar{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+.emotion-tag{
+    padding:3px 9px;border:1px solid #c9b896;
+    border-radius:12px;font-size:12px;
+    cursor:pointer;transition:all .2s;
+}
+.emotion-tag:hover{border-color:#2f4f4f;color:#2f4f4f}
+.emotion-tag.active{background:#2f4f4f;color:#fff;border-color:#2f4f4f}
+.input-row{display:flex;gap:6px}
+.input-row textarea{
+    flex:1;min-height:50px;resize:none;padding:7px;
+    border:1px solid #c9b896;border-radius:2px;
+    font-family:inherit;font-size:14px;outline:none;
+}
+.send-btn{
+    padding:0 16px;background:#2f4f4f;color:#fff;
+    border:none;border-radius:2px;cursor:pointer;font-family:inherit;
+}
+
+.item-card{
+    padding:12px;background:#fff;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:8px;
+}
+.item-name{font-size:14px;color:#8b2500;margin-bottom:4px}
+.item-desc{font-size:12px;color:#6b5344}
+.empty-tip{text-align:center;color:#8b7355;padding:40px;font-size:13px}
+
+.stat-section{margin-bottom:20px}
+.stat-title{
+    font-size:14px;color:#8b2500;margin-bottom:10px;
+    letter-spacing:2px;padding-bottom:6px;
+    border-bottom:1px solid #e0d2b8;
+}
+.stat-row{
+    display:flex;align-items:center;
+    margin-bottom:8px;gap:8px;
+}
+.stat-name{
+    width:90px;font-size:13px;
+    color:#6b5344;flex-shrink:0;
+}
+.stat-bar{
+    flex:1;height:7px;background:#e0d2b8;
+    border-radius:4px;overflow:hidden;
+}
+.stat-fill{height:100%;background:#2f4f4f;transition:width .3s}
+.stat-val{
+    width:45px;text-align:right;
+    font-size:12px;color:#6b5344;
+}
+.stat-edit-btn{
+    padding:2px 6px;font-size:11px;
+    border:1px solid #c9b896;background:#faf6ed;
+    cursor:pointer;border-radius:2px;font-family:inherit;
+    color:#6b5344;
+}
+.stat-edit-btn:hover{border-color:#2f4f4f;color:#2f4f4f}
+
+.plot-item{
+    padding:12px;background:#fff;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:8px;cursor:pointer;
+}
+.plot-item:hover{border-color:#8b2500}
+.plot-title{font-size:14px;color:#2c1810;margin-bottom:4px}
+.plot-meta{font-size:12px;color:#8b7355}
+
+.modal-mask{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.5);z-index:100;
+    align-items:center;justify-content:center;padding:20px;
+}
+.modal-mask.show{display:flex}
+.modal{
+    background:#f4ede0;border-radius:4px;
+    max-width:400px;width:100%;
+    max-height:80vh;overflow-y:auto;padding:20px;
+}
+.modal-title{
+    font-size:15px;letter-spacing:2px;color:#8b2500;
+    margin-bottom:14px;padding-bottom:8px;
+    border-bottom:1px solid #c9b896;
+}
+.gift-item{
+    padding:8px 10px;border:1px solid #e0d2b8;
+    border-radius:2px;margin-bottom:6px;cursor:pointer;
+}
+.gift-item:hover{border-color:#8b2500;background:#faf0e0}
+
+.toast{
+    position:fixed;top:20px;left:50%;
+    transform:translateX(-50%);
+    background:#2c1810;color:#fff;
+    padding:8px 18px;border-radius:2px;
+    font-size:13px;z-index:200;opacity:0;
+    transition:opacity .3s;pointer-events:none;
+}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div class="login-page" id="loginPage">
+    <div class="login-box">
+        <h1 class="login-title">毓养芳华</h1>
+        <div class="login-sub">请入戏</div>
+        
+        <div class="form-group">
+            <label class="form-label">房间号</label>
+            <select class="form-select" id="roomSelect"></select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">角色名</label>
+            <input type="text" class="form-input" id="playerName" placeholder="请输入你的名字">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">头像</label>
+            <div class="avatar-upload" id="avatarUpload">
+                <span>点击上传</span>
+            </div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none">
+        </div>
+        
+        <button class="btn-submit" onclick="login()">请入戏</button>
+    </div>
+</div>
+
+<!-- 主界面 -->
+<div class="main-page" id="mainPage">
+    <div class="header">
+        <h2 id="playerTitle">毓芳楼</h2>
+        <span style="font-size:12px;color:#8b7355" id="roomTag"></span>
+    </div>
+
+    <div class="content" id="contentArea">
+        <!-- 对戏 -->
+        <div class="panel active" id="panel-chat">
+            <div class="chat-area" id="chatArea"></div>
+            <div class="input-area">
+                <div class="emotion-bar" id="emotionBar">
+                    <span class="emotion-tag active" data-emotion="平和">平和</span>
+                    <span class="emotion-tag" data-emotion="开心">开心</span>
+                    <span class="emotion-tag" data-emotion="难过">难过</span>
+                    <span class="emotion-tag" data-emotion="愤怒">愤怒</span>
+                    <span class="emotion-tag" data-emotion="惊讶">惊讶</span>
+                    <span class="emotion-tag" data-emotion="害羞">害羞</span>
+                    <span class="emotion-tag" data-emotion="无语">无语</span>
+                </div>
+                <div class="input-row">
+                    <textarea id="msgInput" placeholder="说点什么..."></textarea>
+                    <button class="send-btn" onclick="sendMessage()">发送</button>
+                </div>
+                <div style="margin-top:8px;text-align:right">
+                    <button class="stat-edit-btn" onclick="openModal('gift')">赠送道具</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 剧情 -->
+        <div class="panel" id="panel-plot">
+            <div id="plotList"></div>
+        </div>
+
+        <!-- 背包 -->
+        <div class="panel" id="panel-bag">
+            <div style="margin-bottom:12px">
+                <button class="stat-edit-btn" onclick="openModal('addItem')">+ 添加道具</button>
+            </div>
+            <div id="bagList"></div>
+        </div>
+
+        <!-- 数值 -->
+        <div class="panel" id="panel-stats">
+            <div id="statsContent"></div>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" data-panel="chat">对戏</div>
+        <div class="nav-item" data-panel="plot">剧情</div>
+        <div class="nav-item" data-panel="bag">背包</div>
+        <div class="nav-item" data-panel="stats">数值</div>
+    </div>
+</div>
+
+<!-- 赠送道具弹窗 -->
+<div class="modal-mask" id="modal-gift">
+    <div class="modal">
+        <div class="modal-title">选择赠送的道具</div>
+        <div id="giftList"></div>
+        <div style="text-align:right;margin-top:12px">
+            <button class="stat-edit-btn" onclick="closeModal('gift')">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加道具弹窗 -->
+<div class="modal-mask" id="modal-addItem">
+    <div class="modal">
+        <div class="modal-title">添加道具</div>
+        <div class="form-group">
+            <label class="form-label">道具名称</label>
+            <input type="text" class="form-input" id="addItemName">
+        </div>
+        <div class="form-group">
+            <label class="form-label">道具描述</label>
+            <textarea class="form-input" id="addItemDesc" style="min-height:60px"></textarea>
+        </div>
+        <div style="text-align:right">
+            <button class="stat-edit-btn" onclick="closeModal('addItem')" style="margin-right:8px">取消</button>
+            <button class="send-btn" style="padding:6px 16px" onclick="confirmAddItem()">确认添加</button>
+        </div>
+    </div>
+</div>
+
+<!-- 修改数值弹窗 -->
+<div class="modal-mask" id="modal-editStat">
+    <div class="modal">
+        <div class="modal-title" id="editStatTitle">修改数值</div>
+        <div class="form-group">
+            <label class="form-label">当前数值</label>
+            <input type="number" class="form-input" id="editStatValue">
+        </div>
+        <div style="text-align:right">
+            <button class="stat-edit-btn" onclick="closeModal('editStat')" style="margin-right:8px">取消</button>
+            <button class="send-btn" style="padding:6px 16px" onclick="confirmEditStat()">确认保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 剧情详情弹窗 -->
+<div class="modal-mask" id="modal-plotDetail">
+    <div class="modal" style="max-width:500px">
+        <div class="modal-title" id="plotDetailTitle">剧情记录</div>
+        <div id="plotDetailContent" style="max-height:60vh;overflow-y:auto"></div>
+        <div style="text-align:right;margin-top:12px">
+            <button class="stat-edit-btn" onclick="closeModal('plotDetail')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 【重要】填写你的 Supabase 配置（和楼主端完全一致）
+// ============================================================
+const SUPABASE_URL = "https://ysdmcswokachepuizple.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzZG1jc3dva2FjaGVwdWl6cGxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMjY3MzUsImV4cCI6MjEwMjgwMjczNX0.LVudX6SBGd3NwwS5hK6AahYVjTrPXDIZaT8s0InQegk";
+// ============================================================
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const EMOTIONS = ['平和','开心','难过','愤怒','惊讶','害羞','无语'];
+const STATS_LIST = ['乐舞','书画','花艺','茶道','医药','算数','制造','烹饪','策论','骑射','堪舆','习语','体质','容貌','声望','太后党重视度','士族党重视度','帝党重视度','清流党重视度'];
+const ROOM_COUNT = 8;
+
+let playerInfo = {name:'', avatar:''};
+let currentRoom = null;
+let currentEmotion = '平和';
+let roomData = {};
+let subscription = null;
+let editingStatName = '';
+
+// 初始化房间选择
+function initRoomSelect(){
+    const sel = document.getElementById('roomSelect');
+    for(let i=0;i<ROOM_COUNT;i++){
+        const id = String(i+1).padStart(3,'0');
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = `房间 ${id}`;
+        sel.appendChild(opt);
+    }
+}
+
+// 头像上传
+document.getElementById('avatarUpload').onclick = ()=>document.getElementById('avatarInput').click();
+document.getElementById('avatarInput').onchange = e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+        playerInfo.avatar = ev.target.result;
+        document.getElementById('avatarUpload').innerHTML = `<img src="${ev.target.result}">`;
+    };
+    reader.readAsDataURL(file);
+};
+
+// 登录
+async function login(){
+    const room = document.getElementById('roomSelect').value;
+    const name = document.getElementById('playerName').value.trim();
+    if(!name){showToast('请输入角色名');return}
+    
+    playerInfo.name = name;
+    currentRoom = room;
+    
+    // 保存本地记住登录
+    localStorage.setItem('yfh_player', JSON.stringify({
+        room, name, avatar:playerInfo.avatar
+    }));
+    
+    // 确保房间存在
+    await initRoomIfNotExists(room);
+    
+    // 更新玩家信息
+    roomData.playerInfo = {
+        name, 
+        avatar:playerInfo.avatar, 
+        loginTime:Date.now()
+    };
+    await saveRoomData();
+    
+    enterMain();
+}
+
+async function initRoomIfNotExists(roomId){
+    const {data} = await supabase.from('rooms').select('*').eq('room_id', roomId).maybeSingle();
+    if(!data){
+        const initData = {
+            playerInfo: null,
+            npcList: {},
+            npcFavor: {},
+            stats: {},
+            messages: {},
+            inventory: {},
+            plotArchive: {},
+            currentPlot: null
+        };
+        ['夜鸩','白照儿','林晚樵','许愿','秦霜','阿娜枝'].forEach(n=>{
+            initData.npcList[n] = 0;
+            initData.npcFavor[n] = 0;
+        });
+        STATS_LIST.forEach(s=>initData.stats[s] = 0);
+        initData.stats.体质 = 50;
+        initData.stats.容貌 = 100;
+        
+        await supabase.from('rooms').insert({room_id: roomId, data: initData});
+        roomData = initData;
+    }else{
+        roomData = data.data || {};
+    }
+}
+
+// 自动登录
+function autoLogin(){
+    const saved = localStorage.getItem('yfh_player');
+    if(saved){
+        const data = JSON.parse(saved);
+        document.getElementById('roomSelect').value = data.room;
+        document.getElementById('playerName').value = data.name;
+        if(data.avatar){
+            playerInfo.avatar = data.avatar;
+            document.getElementById('avatarUpload').innerHTML = `<img src="${data.avatar}">`;
+        }
+        currentRoom = data.room;
+        playerInfo.name = data.name;
+        enterMain();
+    }
+}
+
+// 进入主界面
+async function enterMain(){
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainPage').classList.add('show');
+    document.getElementById('playerTitle').textContent = playerInfo.name;
+    document.getElementById('roomTag').textContent = `房间 ${currentRoom}`;
+    
+    // 先拉一次数据
+    if(!roomData || Object.keys(roomData).length===0){
+        const {data} = await supabase.from('rooms').select('*').eq('room_id', currentRoom).maybeSingle();
+        if(data) roomData = data.data || {};
+    }
+    renderAll();
+    
+    // 订阅实时更新
+    if(subscription) supabase.removeChannel(subscription);
+    subscription = supabase.channel(`player-${currentRoom}`)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rooms',
+            filter: `room_id=eq.${currentRoom}`
+        }, payload=>{
+            roomData = payload.new.data || {};
+            renderAll();
+        })
+        .subscribe();
+    
+    showToast('欢迎入戏');
+}
+
+function renderAll(){
+    renderChat(roomData.messages || {});
+    renderPlotList(roomData.plotArchive || {});
+    renderBag(roomData.inventory || {});
+    renderStats(roomData.stats || {}, roomData.npcFavor || {});
+}
+
+// 渲染聊天
+function renderChat(messages){
+    const area = document.getElementById('chatArea');
+    area.innerHTML = '';
+    const msgList = Object.values(messages).sort((a,b)=>a.timestamp - b.timestamp);
+    
+    msgList.forEach((msg, idx)=>{
+        if(msg.type==='options'){
+            const card = document.createElement('div');
+            card.className = 'options-card';
+            card.innerHTML = '<div class="options-title">请做出选择</div>';
+            
+            msg.options.forEach((opt, i)=>{
+                const canSelect = checkOptionReq(opt.req);
+                const item = document.createElement('div');
+                item.className = 'option-item' + (canSelect?'':' disabled');
+                item.innerHTML = `
+                    ${opt.text}
+                    ${opt.req?`<div class="option-req">${canSelect?'':'数值不足：'}${opt.req}</div>`:''}
+                `;
+                if(canSelect){
+                    item.onclick = ()=>selectOption(msg, opt);
+                }
+                card.appendChild(item);
+            });
+            area.appendChild(card);
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.className = `msg msg-${msg.type}`;
+        
+        if(msg.type==='system'){
+            div.innerHTML = `<div class="msg-bubble">${msg.content}</div>`;
+        }else{
+            const avatar = msg.type==='player' ? playerInfo.avatar : '';
+            div.innerHTML = `
+                <div class="msg-avatar">${avatar?`<img src="${avatar}">`:''}</div>
+                <div class="msg-bubble">
+                    <div class="msg-name">
+                        ${msg.sender}
+                        ${msg.emotion?`<span class="msg-emotion">${msg.emotion}</span>`:''}
+                    </div>
+                    <div class="msg-content">${msg.content}</div>
+                    ${msg.type==='npc' ? `
+                    <div class="msg-actions">
+                        <span onclick="likeNpc('${msg.sender}')">点赞</span>
+                        <span onclick="heartNpc('${msg.sender}')">送心</span>
+                    </div>`:''}
+                </div>
+            `;
+        }
+        area.appendChild(div);
+    });
+    
+    area.scrollTop = area.scrollHeight;
+}
+
+// 检查选项数值门槛
+function checkOptionReq(req){
+    if(!req) return true;
+    const match = req.match(/(.+)([><=]+)(\d+)/);
+    if(!match) return true;
+    const stat = match[1].trim();
+    const op = match[2];
+    const val = parseInt(match[3]);
+    const current = roomData.stats?.[stat] || 0;
+    
+    switch(op){
+        case '>': return current > val;
+        case '>=': return current >= val;
+        case '<': return current < val;
+        case '<=': return current <= val;
+        case '==': return current == val;
+        default: return true;
+    }
+}
+
+// 选择选项
+async function selectOption(msgObj, option){
+    const resultMsg = {
+        type:'system',
+        content:`你选择了：${option.text}<br>${option.effect || ''}`,
+        timestamp:Date.now()
+    };
+    const msgId = 'msg_' + Date.now() + '_res';
+    roomData.messages[msgId] = resultMsg;
+    
+    // 好感变化
+    if(option.favor){
+        const npcList = Object.keys(roomData.npcFavor || {});
+        const npc = npcList[0] || '夜鸩';
+        roomData.npcFavor[npc] = (roomData.npcFavor[npc]||0) + option.favor;
+    }
+    
+    // 道具掉落
+    if(option.item){
+        const itemId = 'item_' + Date.now();
+        roomData.inventory[itemId] = {name:option.item, desc:'选择所得', time:Date.now()};
+    }
+    
+    // 移除选项消息
+    Object.keys(roomData.messages).forEach(k=>{
+        if(roomData.messages[k].type === 'options'){
+            delete roomData.messages[k];
+        }
+    });
+    
+    await saveRoomData();
+    showToast('已做出选择');
+}
+
+// 发送消息
+function sendMessage(){
+    if(!currentRoom) return;
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    roomData.messages[msgId] = {
+        type:'player',
+        sender:playerInfo.name,
+        avatar:playerInfo.avatar,
+        content:text,
+        emotion:currentEmotion,
+        timestamp:Date.now()
+    };
+    
+    saveRoomData();
+    input.value = '';
+}
+
+function likeNpc(name){showToast(`给 ${name} 点了赞`)}
+function heartNpc(name){showToast(`给 ${name} 送了小心心`)}
+
+// 渲染背包
+function renderBag(inventory){
+    const list = document.getElementById('bagList');
+    const items = Object.values(inventory);
+    if(items.length===0){
+        list.innerHTML = '<div class="empty-tip">背包空空如也</div>';
+        return;
+    }
+    list.innerHTML = '';
+    items.forEach(item=>{
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+            <div class="item-name">${item.name}</div>
+            <div class="item-desc">${item.desc || ''}</div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// 手动添加道具
+function confirmAddItem(){
+    const name = document.getElementById('addItemName').value.trim();
+    const desc = document.getElementById('addItemDesc').value.trim();
+    if(!name){showToast('请输入道具名');return}
+    
+    const itemId = 'item_' + Date.now();
+    roomData.inventory = roomData.inventory || {};
+    roomData.inventory[itemId] = {name, desc, time:Date.now()};
+    
+    saveRoomData();
+    document.getElementById('addItemName').value = '';
+    document.getElementById('addItemDesc').value = '';
+    closeModal('addItem');
+    showToast('道具已添加');
+}
+
+// 渲染数值（带编辑按钮）
+function renderStats(stats, favor){
+    const container = document.getElementById('statsContent');
+    container.innerHTML = '';
+    
+    // 十二艺业
+    const arts = STATS_LIST.slice(0,12);
+    container.innerHTML += renderStatSection('十二艺业', arts, stats, 1500);
+    
+    // 基础属性
+    const base = STATS_LIST.slice(12,15);
+    container.innerHTML += renderStatSection('基础属性', base, stats, 1000);
+    
+    // 党派重视度
+    const parties = STATS_LIST.slice(15);
+    container.innerHTML += renderStatSection('党派重视度', parties, stats, 200);
+    
+    // NPC好感
+    if(favor && Object.keys(favor).length){
+        let favorHtml = '<div class="stat-section"><div class="stat-title">毓芳六美好感</div>';
+        Object.entries(favor).forEach(([name,val])=>{
+            favorHtml += `
+                <div class="stat-row">
+                    <span class="stat-name">${name}</span>
+                    <div class="stat-bar"><div class="stat-fill" style="width:${Math.min(val/100*100,100)}%"></div></div>
+                    <span class="stat-val">${val}</span>
+                    <button class="stat-edit-btn" onclick="openEditStat('${name}', ${val}, 'favor')">改</button>
+                </div>
+            `;
+        });
+        favorHtml += '</div>';
+        container.innerHTML += favorHtml;
+    }
+}
+
+function renderStatSection(title, names, stats, max){
+    let html = `<div class="stat-section"><div class="stat-title">${title}</div>`;
+    names.forEach(name=>{
+        const val = stats[name] || 0;
+        html += `
+            <div class="stat-row">
+                <span class="stat-name">${name}</span>
+                <div class="stat-bar"><div class="stat-fill" style="width:${Math.min(val/max*100,100)}%"></div></div>
+                <span class="stat-val">${val}</span>
+                <button class="stat-edit-btn" onclick="openEditStat('${name}', ${val}, 'stat')">改</button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// 打开修改数值弹窗
+function openEditStat(name, value, type){
+    editingStatName = name;
+    document.getElementById('editStatTitle').textContent = `修改：${name}`;
+    document.getElementById('editStatValue').value = value;
+    openModal('editStat');
+}
+
+function confirmEditStat(){
+    const newVal = parseInt(document.getElementById('editStatValue').value) || 0;
+    
+    if(STATS_LIST.includes(editingStatName)){
+        roomData.stats[editingStatName] = newVal;
+    }else{
+        roomData.npcFavor[editingStatName] = newVal;
+        roomData.npcList[editingStatName] = newVal;
+    }
+    
+    saveRoomData();
+    closeModal('editStat');
+    showToast('已保存');
+}
+
+// 渲染剧情列表
+function renderPlotList(archive){
+    const list = document.getElementById('plotList');
+    const plots = Object.entries(archive).sort((a,b)=>b[1].startTime - a[1].startTime);
+    
+    if(plots.length===0){
+        list.innerHTML = '<div class="empty-tip">暂无剧情记录</div>';
+        return;
+    }
+    
+    list.innerHTML = '';
+    plots.forEach(([id,plot])=>{
+        const div = document.createElement('div');
+        div.className = 'plot-item';
+        div.innerHTML = `
+            <div class="plot-title">${plot.npcs} · ${plot.place}</div>
+            <div class="plot-meta">${plot.date} ${plot.time} · ${plot.status==='active'?'进行中':'已结束'}</div>
+        `;
+        div.onclick = ()=>showPlotDetail(plot);
+        list.appendChild(div);
+    });
+}
+
+function showPlotDetail(plot){
+    document.getElementById('plotDetailTitle').textContent = `${plot.npcs} · ${plot.place}`;
+    const content = document.getElementById('plotDetailContent');
+    content.innerHTML = '';
+    
+    const msgs = Object.values(plot.messages||{}).sort((a,b)=>a.timestamp - b.timestamp);
+    msgs.forEach(msg=>{
+        const div = document.createElement('div');
+        div.style.marginBottom = '8px';
+        div.style.padding = '6px';
+        div.style.borderBottom = '1px dashed #e0d2b8';
+        if(msg.type==='system'){
+            div.style.color = '#6b5344';
+            div.style.fontSize = '12px';
+            div.innerHTML = msg.content;
+        }else{
+            div.innerHTML = `<b style="color:#8b2500">${msg.sender}</b>：${msg.content}`;
+        }
+        content.appendChild(div);
+    });
+    
+    openModal('plotDetail');
+}
+
+// 赠送道具
+function openGiftModal(){
+    const list = document.getElementById('giftList');
+    const items = Object.values(roomData.inventory || {});
+    if(items.length===0){
+        list.innerHTML = '<div style="color:#8b7355;text-align:center;padding:20px">背包里没有道具</div>';
+        return;
+    }
+    list.innerHTML = '';
+    items.forEach(item=>{
+        const div = document.createElement('div');
+        div.className = 'gift-item';
+        div.textContent = item.name;
+        div.onclick = ()=>giftItem(item);
+        list.appendChild(div);
+    });
+}
+
+function giftItem(item){
+    const sysId = 'msg_' + Date.now();
+    roomData.messages[sysId] = {
+        type:'system',
+        content:`你向NPC赠送了：${item.name}`,
+        timestamp:Date.now()
+    };
+    saveRoomData();
+    closeModal('gift');
+    showToast('已赠送道具');
+}
+
+// 保存数据
+async function saveRoomData(){
+    if(!currentRoom) return;
+    await supabase.from('rooms').update({
+        data: roomData,
+        updated_at: new Date().toISOString()
+    }).eq('room_id', currentRoom);
+}
+
+// 情绪选择
+document.getElementById('emotionBar').addEventListener('click',e=>{
+    if(e.target.classList.contains('emotion-tag')){
+        document.querySelectorAll('.emotion-tag').forEach(t=>t.classList.remove('active'));
+        e.target.classList.add('active');
+        currentEmotion = e.target.dataset.emotion;
+    }
+});
+
+// 底部导航
+document.querySelectorAll('.nav-item').forEach(item=>{
+    item.onclick = ()=>{
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        item.classList.add('active');
+        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+        document.getElementById('panel-'+item.dataset.panel).classList.add('active');
+    };
+});
+
+// 弹窗
+function openModal(id){
+    if(id==='gift') openGiftModal();
+    document.getElementById('modal-'+id).classList.add('show');
+}
+function closeModal(id){
+    document.getElementById('modal-'+id).classList.remove('show');
+}
+
+// Toast
+function showToast(text){
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// 回车发送
+document.getElementById('msgInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// 初始化
+initRoomSelect();
+autoLogin();
+</script>
+</body>
+</html>
